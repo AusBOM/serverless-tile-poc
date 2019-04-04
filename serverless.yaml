@@ -1,0 +1,96 @@
+service:
+  name: serverless-tile
+
+provider:
+  name: aws
+  runtime: python3.6
+  region: ap-southeast-2
+  stage: ${opt:stage, self:custom.defaultStage}
+# stackTags:
+
+
+plugins:
+  - serverless-python-requirements
+  
+custom:
+  defaultStage: dev${env:USER}
+
+package:
+  exclude:
+    - '*/**'
+  include:
+    - 'handler.py'
+    - 'tile.py'
+    - 'colour_map.py'
+    - 'styles.json'
+
+functions:
+  tiler:
+    handler: handler.handler
+    description: Generates tiles
+    # role: BucketKing
+    events:
+      - http:
+          path: /tiles/{z}/{x}/{y}
+          method: get
+    # environment:
+
+resources:
+  Resources:
+    # TileBucket:
+    #   Type: AWS::S3::Bucket
+    #   Properties:
+    #     BucketName: bom-csiro-serverless-test
+        # Access-Control: PublicRead
+        # WebsiteConfiguration:
+        #   RoutingRules:
+        #     - RedirectRule:
+        #       HostName: foo.amazon.aws.com
+        #       HttpRedirectCode: "307"
+        #       Protocol: https
+        #       ReplaceKeyPrefixWith: prod/photos/resize?key=
+        #       RoutingRuleCondition:
+        #         HTTPErrorCodeRetuledEquals: "404"
+    BucketKingRole:
+      Type: AWS::IAM::Role
+      Properties:
+        Path: /
+        RoleName: ${self:provider.stage}-serverless-tile-bucket-king
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal: 
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: BucketKingPolicy
+            PolicyDocument:
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - 'Fn::Join':
+                      - ':'
+                      -
+                        - 'arn:aws:logs'
+                        - Ref: 'AWS::Region'
+                        - Ref: 'AWS::AccountId'
+                        - 'log-group/aws/lambda/*:*:*'
+                - Effect: Allow
+                  Action:
+                    - "s3:PutObject"
+                    - "s3:GetObject"
+                  Resource: 
+                    - "arn:aws:s3:::bom-csiro-serverless-test/*"
+                    # - { "Fn::GetAtt": [ "TileBucket", "Arn" ]}
+                    # - 'Fn::Join':
+                    #   - ""
+                    #   -
+                    #     - "arn:aws:s3:::"
+                    #     - "bom-csiro-serverless-test"
+                    #     - "/*"

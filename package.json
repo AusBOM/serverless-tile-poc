@@ -1,0 +1,15 @@
+{
+  "name": "serverless-tile",
+  "version": "0.1.0",
+  "description": "deploy serverless-tile to aws",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "Michael Bell",
+  "license": "MIT",
+  "dependencies": {
+    "serverless": "^1.40.0",
+    "serverless-python-requirements": "^4.3.0"
+  }
+}
