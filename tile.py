@@ -39,17 +39,18 @@ default_style = [{
 def create_tile(src, x, y, z, style_config=None):
   
   mask_below = 0
-  tile, mask = main.tile(src, x, y, z)
-  b = (tile > 0).astype(int)
-  mask = mask * b[0]
-  # colour_map = get_colour_map(default_style)
-  colour_map = np.empty([256,3])
-  with open('styles.json') as styles_json:
-    styles = json.load(styles_json)
-    # pprint(styles)
-    colour_map = get_colour_band(styles['carla-special'])
-    # dn = DataNormaliser(111)
-    # dn.normalise_data(tile, styles['carla-special'])
+  try: 
+    tile, mask = main.tile(src, x, y, z)
+    b = (tile > 0).astype(int)
+    mask = mask * b[0]
+    # colour_map = get_colour_map(default_style)
+    colour_map = np.empty([256,3])
+    with open('styles.json') as styles_json:
+      styles = json.load(styles_json)
+      # pprint(styles)
+      colour_map = get_colour_band(styles['carla-special'])
+      # dn = DataNormaliser(111)
+      # dn.normalise_data(tile, styles['carla-special'])
 
   # png_tile = tile.astype(np.uint8)
   # png_tile = np.zeros(shape= (256,3))
@@ -57,10 +58,7 @@ def create_tile(src, x, y, z, style_config=None):
   # cv2.normalize(tile, png_tile, 0, 255, cv2.NORM_MINMAX)
   # print(png_tile)
 
-  print(tile)
-  print(tile/1200*255)
-  print((tile/1200*255).astype(np.uint8))
-  png_tile = (tile/1200*255).astype(np.uint8)
+    png_tile = (tile/1200*255).astype(np.uint8)
 
   # calibration = np.empty((12,), dtype=np.int16)
   # inputs = np.array([0, 4, 10, 30, 50, 80, 120, 200, 300, 400, 700, 1200])
@@ -75,6 +73,9 @@ def create_tile(src, x, y, z, style_config=None):
   # out = np.empty((12,), dtype=np.int16)
   # print(cv2.normalize(img, out, 0 ,255, cv2.NORM_MINMAX))
   # print(out)
+
+  except:
+    tile = np.full(256, 3)
 
   return array_to_image(png_tile, color_map=colour_map, mask=mask)
 
