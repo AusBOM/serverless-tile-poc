@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "serverless": "^1.40.0",
+    "serverless-apigw-binary": "^0.4.4",
     "serverless-python-requirements": "^4.3.0"
   }
 }

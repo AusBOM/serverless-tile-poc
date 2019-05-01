@@ -11,9 +11,13 @@ provider:
 
 plugins:
   - serverless-python-requirements
-  
+  - serverless-apigw-binary
+
 custom:
   defaultStage: dev${env:USER}
+  apigwBinary:
+    types:
+      - '*/*'
 
 package:
   exclude:
@@ -23,15 +27,16 @@ package:
     - 'tile.py'
     - 'colour_map.py'
     - 'styles.json'
+    - 'data_config.json'
 
 functions:
   tiler:
     handler: handler.handler
     description: Generates tiles
-    # role: BucketKing
+    role: BucketKingRole
     events:
       - http:
-          path: /tiles/{z}/{x}/{y}
+          path: /tiles/{data}/{z}/{x}/{y}
           method: get
     # environment:
 

@@ -1,0 +1,22 @@
+{
+  "rainrate": {
+    "datasource_file": "abcout.tif",
+    "default_style": "carla_special",
+    "metadata": {
+      "min": 0,
+      "max": 1200,
+      "mask_min": "true",
+      "scale_factor": 0.05,
+      "style_thresholds": [0, 4, 10, 30, 50, 80, 120, 200, 300, 400, 700, 1200]
+    }
+  },
+  "hail": {
+    "datasource_file": "hail.tif",
+    "default_style": "carla_special",
+    "metadata": {
+      "min": -25,
+      "max": 25,
+      "scale_factor": 0.01
+    }
+  }
+}
