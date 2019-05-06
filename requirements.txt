@@ -1,2 +1,4 @@
-rio-tiler[s3]==1.1.4
+# rio-tiler[s3]==1.1.4
+# git+git://github.com/jkbr/httpie.git
+git+git://github.com/rowanwins/rio-tiler.git
 numpy==1.16.2
