@@ -1,4 +1,5 @@
 # rio-tiler[s3]==1.1.4
 # git+git://github.com/jkbr/httpie.git
-git+git://github.com/rowanwins/rio-tiler.git
+# git+git://github.com/rowanwins/rio-tiler.git
+git+https://github.com/rowanwins/rio-tiler.git@pad-tile
 numpy==1.16.2

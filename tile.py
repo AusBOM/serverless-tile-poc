@@ -4,7 +4,7 @@ from rio_tiler.utils import array_to_image
 from colour_map import get_colour_map, get_colour_band
 from data_normaliser import DataNormaliser
 # import cv2
-
+import sys, traceback
 import json
 # default_style = [{
 #   'red': 0,
@@ -54,9 +54,9 @@ def create_tile(src, x, y, z, config=None):
   
   try:
     # returns the tile at the point as well as a mask to for the undefined values
-    src = "/home/mbell/netcdf-test/abcout.tif"
+    # src = "/home/mbell/netcdf-test/abcout.tif"
     # tile, alpha = main.tile(src, x, y, z, resampling_method="nearest")
-    # tile, alpha = main.tile(src, x, y, z)
+    tile, alpha = main.tile(src, x, y, z)
     tile_min = config['metadata'].get('min', np.amin(tile))
     tile_max = config['metadata'].get('max', np.amax(tile))
     scale_factor = config['metadata'].get('scale_factor', 1)
@@ -106,9 +106,12 @@ def create_tile(src, x, y, z, config=None):
   # print(out)
 
   except Exception as e:
+    print('tile generation exception')
     print(e)
+    traceback.print_exc(file=sys.stdout)
+    raise e
     png_tile = np.full(256, 3)
-  print(png_tile.shape, png_tile)
+  # print(png_tile.shape, png_tile)
 
   return array_to_image(png_tile, color_map=colour_map, mask=alpha)
 
@@ -117,6 +120,7 @@ def generate_tile(src, x, y, z):
   
   # colour_map = get_colour_map(format='gdal')
   tile, mask = main.tile(src, x, y, z)
+  print(tile)
   png_tile = tile.astype(np.uint8)
 
   return array_to_image(png_tile, color_map=colour_map, mask=mask, nodata=nodata)

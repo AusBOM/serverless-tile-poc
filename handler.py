@@ -43,6 +43,7 @@ def handler(event, context): # pylint: disabl=unused-argument
   try:
     tile = create_tile(data_config['source'], x_index, y_index, zoom_index, config=data_config)
   except Exception as e:
+    print(e)
     # Create empty 1x1 transparent is png
     tile_init = np.full((1,1,1), 0, dtype=np.uint8)
     mask = np.full((1,1), 0, dtype=np.uint8)
@@ -51,7 +52,7 @@ def handler(event, context): # pylint: disabl=unused-argument
   # print(tile)
   output_file = "{prefix}/{z}/{x}/{y}.png".format(prefix=data_config['output_prefix'],x=x_index,y=y_index,z=zoom_index)
 
-  # with open('whack.png', "wb") as binary_png:
+  # with open('debug3.png', "wb") as binary_png:
   #   binary_png.write(tile)
 
 
@@ -79,14 +80,14 @@ def handler(event, context): # pylint: disabl=unused-argument
 # }
 
 
-# event = {
-#   'pathParameters': {
-#     'data': 'rainrate', 
-#     'x': 3661,
-#     # 'y': 548,
-#     'y': '2192.png',
-#     'z': 12
-#   }
-# }
+event = {
+  'pathParameters': {
+    'data': 'rainrate', 
+    'x': 29333,
+    # 'y': 548,
+    'y': '17525.png',
+    'z': 15
+  }
+}
 
 # handler(event, None)
