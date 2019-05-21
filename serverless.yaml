@@ -23,6 +23,7 @@ package:
   exclude:
     - '*/**'
   include:
+    - 'stac/**'
     - 'handler.py'
     - 'tile.py'
     - 'colour_map.py'
@@ -39,9 +40,32 @@ functions:
           path: /tiles/{data}/{z}/{x}/{y}
           method: get
     # environment:
+  stac:
+    handler: stac.handler
+    description: updates data catalogue
+    role: BucketKingRole
+    events:
+      - http:
+          path: /stac
+          method: post
 
 resources:
   Resources:
+    STACDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: stac_register
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 3
+          WriteCapacityUnits: 3
     # TileBucket:
     #   Type: AWS::S3::Bucket
     #   Properties:
@@ -92,6 +116,13 @@ resources:
                     - "s3:GetObject"
                   Resource: 
                     - "arn:aws:s3:::bom-csiro-serverless-test/*"
+                - Effect: Allow
+                  Action:
+                    - dynamodb:PutItem
+                    - dynamodb:GetItem
+                    - dynamodb:Scan
+                  Resource:
+                    - { "Fn::GetAtt": ["STACDynamoDBTable", "Arn" ] }
                     # - { "Fn::GetAtt": [ "TileBucket", "Arn" ]}
                     # - 'Fn::Join':
                     #   - ""

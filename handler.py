@@ -7,28 +7,23 @@ from tile import create_tile
 import rasterio
 import base64
 import json
+from stac import get_stac
 
 with open("data_config.json") as config_file:
   config = json.load(config_file)
 
-print(config)
+def get_stac_config(data_id):
+  """Get the config for the given data_id"""
 
-def get_config(data):
-  """Reads the config in for test."""
-  source_bucket = "bom-csiro-serverless-test"
-
-
-  config[data].setdefault("source", "s3://{bucket}/{file}".format(bucket=source_bucket, file=config[data]['datasource_file'])),
-  config[data].setdefault("output_prefix", "tiles/{data}".format(data=data))
-
-  return config[data]
+  stac_config = get_stac(data_id)
+  return_config = stac_config['properties']
+  return_config['source'] = stac_config['assets']['source']['href']
+  return_config.setdefault('output_prefix', 'tiles/' + data_id)
+  return return_config
 
 
-def handler(event, context): # pylint: disabl=unused-argument
+def handler(event, context, invoke_local=False): # pylint: disabl=unused-argument
   """Generate new tile"""
-
-  # with rasterio.open('s3://bom-csiro-serverless-test/abcout.tif') as src:
-  #     print("This raster has {} bands".format(src.count))
 
   # Get x,y,z variables
   data = event['pathParameters']['data']
@@ -36,8 +31,7 @@ def handler(event, context): # pylint: disabl=unused-argument
   y_index = int(event['pathParameters']['y'].strip('.png'))
   zoom_index = int(event['pathParameters']['z'])
 
-  data_config = get_config(data)
-  # print(data_config)
+  data_config = get_stac_config(data)
 
   bucket = "bom-csiro-serverless-test"
   try:
@@ -49,16 +43,16 @@ def handler(event, context): # pylint: disabl=unused-argument
     mask = np.full((1,1), 0, dtype=np.uint8)
     tile = array_to_image(tile_init, mask=mask)
 
-  # print(tile)
   output_file = "{prefix}/{z}/{x}/{y}.png".format(prefix=data_config['output_prefix'],x=x_index,y=y_index,z=zoom_index)
 
-  # with open('debug3.png', "wb") as binary_png:
-  #   binary_png.write(tile)
 
-
-  s3 = boto3.resource('s3')
-  s3object = s3.Object(bucket, output_file)
-  s3object.put(Body=tile)
+  if invoke_local == True:
+    with open("data/{output_file}".format(output_file=output_file), "wb") as binary_png:
+      binary_png.write(tile)
+  else:
+    s3 = boto3.resource('s3')
+    s3object = s3.Object(bucket, output_file)
+    s3object.put(Body=tile)
 
   return {
     'statusCode': "200",
@@ -68,26 +62,3 @@ def handler(event, context): # pylint: disabl=unused-argument
     'body': base64.b64encode(tile).decode('utf-8'),
     'isBase64Encoded': True
   }
-
-# event = {
-#   'pathParameters': {
-#     'data': 'rainrate', 
-#     'x': 914,
-#     # 'y': 548,
-#     'y': '549.png',
-#     'z': 10
-#   }
-# }
-
-
-event = {
-  'pathParameters': {
-    'data': 'rainrate', 
-    'x': 29333,
-    # 'y': 548,
-    'y': '17525.png',
-    'z': 15
-  }
-}
-
-# handler(event, None)
