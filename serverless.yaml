@@ -23,7 +23,7 @@ package:
   exclude:
     - '*/**'
   include:
-    - 'stac/**'
+    # - 'stac/**'
     - 'handler.py'
     - 'tile.py'
     - 'colour_map.py'
@@ -48,6 +48,14 @@ functions:
       - http:
           path: /stac
           method: post
+  collection_items:
+    handler: stac.collection_items_handler
+    description: Get items from a collection
+    role: BucketKingRole
+    events:
+      - http:
+          path: /collections/{collection_id}/items
+          method: get
 
 resources:
   Resources:
@@ -66,20 +74,34 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 3
           WriteCapacityUnits: 3
-    # TileBucket:
-    #   Type: AWS::S3::Bucket
-    #   Properties:
-    #     BucketName: bom-csiro-serverless-test
-        # Access-Control: PublicRead
-        # WebsiteConfiguration:
-        #   RoutingRules:
-        #     - RedirectRule:
-        #       HostName: foo.amazon.aws.com
-        #       HttpRedirectCode: "307"
-        #       Protocol: https
-        #       ReplaceKeyPrefixWith: prod/photos/resize?key=
-        #       RoutingRuleCondition:
-        #         HTTPErrorCodeRetuledEquals: "404"
+    TileBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: crazy-test-bucket-bom-csiro
+        AccessControl: PublicRead
+        WebsiteConfiguration:
+          ErrorDocument: error.html
+          IndexDocument: index.html
+          RoutingRules:
+            - RedirectRule:
+                HostName:
+                  !Join
+                    - ''
+                    - - !Ref ApiGatewayRestApi
+                      - 'execute-api.'
+                      - ${opt:region, self:provider.region}
+                      - '.amazonaws.com'
+                # 3kqevxas52.execute-api.ap-southeast-2.amazonaws.com
+                # HttpRedirectCode: "307"
+                Protocol: https
+                ReplaceKeyPrefixWith: 
+                  !Join
+                    - ''
+                    - - ${opt:stage, self:provider.stage}
+                      - '/tiles/'
+              RoutingRuleCondition:
+                HttpErrorCodeReturnedEquals: "404"
+                KeyPrefixEquals: "tiles/"
     BucketKingRole:
       Type: AWS::IAM::Role
       Properties:
