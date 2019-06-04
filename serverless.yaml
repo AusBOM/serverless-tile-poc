@@ -39,7 +39,15 @@ functions:
       - http:
           path: /tiles/{data}/{z}/{x}/{y}
           method: get
-    # environment:
+  tiler-style:
+    handler: handler.handler
+    description: Generates tiles
+    role: BucketKingRole
+    events:
+      - http:
+          path: /tiles/{data}/style/{style}/{z}/{x}/{y}
+          method: get
+          # environment:
   stac:
     handler: stac.handler
     description: updates data catalogue

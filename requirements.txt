@@ -3,3 +3,4 @@
 # git+git://github.com/rowanwins/rio-tiler.git
 git+https://github.com/rowanwins/rio-tiler.git@pad-tile
 numpy==1.16.2
+spectra==0.0.11

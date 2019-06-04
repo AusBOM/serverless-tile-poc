@@ -2,16 +2,51 @@ import boto3
 import json
 from decimal import Decimal
 from boto3.dynamodb.conditions import Key, Attr
-
+from style import Style
 # Helper class to convert a DynamoDB item to JSON.
 
 def update_stac(item):
 
-  dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
-  table = dynamodb.Table('stac_register')
-  response = table.put_item(Item=item)
-  print(response)
+    dynamodb = boto3.resource('dynamodb'  , region_name='ap-southeast-2')
+    table = dynamodb.Table('stac_register')
+    print(item, 'wassup')
+    print(item, item['id'])
+    response = table.put_item(Item=item)
+    print(response)
 
+
+def create_style_from_stac(style_data, indexes, bucket=None, dataname=None, default=False):
+    style_id = style_data['id']
+    style_indexes = indexes
+    resampling_method = style_data.get('resampling_method', 'bilinear')
+    hide_min = style_data.get('hide_min', True)
+    hide_max = style_data.get('hide_max', False)
+    gradient = style_data.get('gradient', True)
+    if 'colours' in style_data:
+        colours = '-'.join(style_Data.colours)
+    else:
+        colours = style_id
+
+    style = Style(style_id, style_indexes, resampling_method=resampling_method, hide_min=hide_min, hide_max=hide_max, gradient=gradient)
+    
+    # save the style to s3
+    if bucket and dataname:
+        s3 = boto3.resource('s3')
+        s3filename = "tiles/{data}/{id}.json".format(data=dataname, id=style_id)
+        s3object = s3.Object(bucket, s3filename)
+        s3object.put(
+            Body=(bytes(style.json().encode('UTF-8')))
+        )
+        print(default)
+        if default:
+            s3filename = "tiles/{data}/default.json".format(data=dataname, id=style_id)
+            s3object = s3.Object(bucket, s3filename)
+            s3object.put(
+                Body=(bytes(style.json().encode('UTF-8')))
+            )
+
+
+    return style
 
 def handler(event, context):
 
@@ -22,8 +57,19 @@ def handler(event, context):
     stacs = json.loads(event['body'], parse_float=Decimal)
 
     for stac in stacs:
+        # print(stac)
         update_stac(stac)
-        body = get_collection(collection_id)
+        # body = get_collection(collection_id)
+        print(stac['properties'])
+        # print(stac['indexes'])
+        if 'styles' in stac['properties'] and 'style_indexes' in stac['properties']:
+            bucket = "bom-csiro-serverless-test"
+            for style in stac['properties']['styles']:
+                default = False
+                print(stac['properties']['default_style'], stac['id'])
+                if 'default_style' in stac['properties'] and stac['properties']['default_style'] == style['id']:
+                    default = True
+                create_style_from_stac(style, stac['properties'] ['style_indexes'], bucket, stac['id'], default=default)
     
     return {
         'statusCode': "204",
@@ -35,10 +81,12 @@ def get_stac(id):
 
     dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
     table = dynamodb.Table('stac_register')
+    print(id)
     response = table.get_item(
         Key={
         'id': id
         })
+    print(response)
     return replace_decimals(response['Item'])
 
 

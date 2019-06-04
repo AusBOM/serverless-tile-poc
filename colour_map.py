@@ -1,4 +1,5 @@
 import numpy as np
+import spectra
 
 def genarate_range(start, end, size):
   if start == end:
@@ -26,8 +27,51 @@ def get_colour_map(style):
     colour_map = np.concatenate((colour_map, style_run_map), axis=0)
   return colour_map
 
+def make_colour_map(colours, indexes=None, size=256):
+    print(indexes)
+    if not indexes:
+      # If indexes is falsy, return an even distribution.
+      color_array = spectra.range(colours, 256)
+      return np.asarray([c.rgb for c in color_array])*255
+    else:
+      # If indexes is not falsy, make the distribution in parts
+      
+      # TODO: match indexes and colours
+      
+    
+    #   colour_map = np.empty([0,3], dtype=np.uint8)
+    #   colour_map = np.array([[0,0,0]])
+        colour_run = spectra.range([colours[0], colours[1]], indexes[1] - indexes[0] + 1)
+        colour_map = np.asarray([c.rgb for c in colour_run])*255
+        print(colour_map, colour_map[:-1])
+        for x in range(1, len(indexes) - 1):
+            print(colours[x], colours[x+1], indexes[x], indexes[x+1])
+            # print(spectra.range([colours[x], colours[x+1]], indexes[x+1] - indexes[x]))
+            colour_run = spectra.range([colours[x], colours[x+1]], indexes[x+1] - indexes[x] + 1)
+            crt = np.asarray([c.rgb for c in colour_run])*255
+            print(colour_map.shape, crt.shape, type(crt))
+            # print(colour_map)
+            # print(colour_map[:-1,:])
+            # Note: To avoid overlap we cut off the last value from the current colour map
+            colour_map = np.concatenate((colour_map[:-1,:], crt), axis=0)
+      
+
+        return colour_map
+
+# def make_colour_map(start_colour, end_colour, size=256):
+#     color_array = spectra.range(['red', 'green', 'blue'], 256)
+#     j = np.asarray([c.rgb for c in color_array])*255
+  
+
+def get_style_colour_map(style_id):
+  # Check to see if style is in s3
+  # Otherwise check if style is in s3
+  pass
+
 def get_colour_band(style_json, band_thresholds=None):
 
+
+  return make_colour_map(['#0000ff', 'purple', 'green', 'blue'], indexes=[0, 4, 10, 255])
   calibration_array = np.arange(0, 412)
   # print(calibration_array.astype(np.uint8))  
 
@@ -65,6 +109,9 @@ def get_colour_band(style_json, band_thresholds=None):
       x += 1
     
     # print(colour_map)
+    color_array = spectra.range(['red', 'green', 'blue'], 256)
+    j = np.asarray([c.rgb for c in color_array])*255
+    return j
     return colour_map
 
 
