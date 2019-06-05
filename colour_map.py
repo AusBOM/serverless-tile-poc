@@ -3,7 +3,7 @@
 import numpy as np
 import spectra
 
-def make_colour_map(colours, indexes=None, size=256):
+def make_colour_map(colours, indexes=None, size=256, gradient=True):
     """Make a colour map for a list of colours aligned to indexes.
 
     Parameters
@@ -30,14 +30,20 @@ def make_colour_map(colours, indexes=None, size=256):
 
     # Otherwise, align the colour map to the indexes
     # Find the colours between the first and second index.
-    colour_run = spectra.range([colours[0], colours[1]], indexes[1] - indexes[0] + 1)
-    colour_map = np.asarray([c.rgb for c in colour_run])*255
+    run_size = indexes[1] - indexes[0] + 1
+    if gradient:
+        colour_run = spectra.range([colours[0], colours[1]], run_size)
+        colour_map = np.asarray([c.rgb for c in colour_run])*255
+    else:
+        colour_map = np.tile(np.asarray(spectra.html(colours[0]).rgb),(run_size,1))*255
     # Find the remaining colours values and concatenate into one array.
     for run in range(1, len(indexes) - 1):
-        colour_run = spectra.range(
-            [colours[run], colours[run+1]],
-            indexes[run+1] - indexes[run] + 1)
-        crt = np.asarray([c.rgb for c in colour_run])*255
+        run_size = indexes[run+1] - indexes[run] + 1
+        if gradient:
+            colour_run = spectra.range([colours[run], colours[run+1]], run_size)
+            crt = np.asarray([c.rgb for c in colour_run])*255
+        else:
+            crt = np.tile(np.asarray(spectra.html(colours[run]).rgb),(run_size,1))*255
         # Note: To avoid overlap we cut off the last value from the current colour map
         colour_map = np.concatenate((colour_map[:-1, :], crt), axis=0)
 

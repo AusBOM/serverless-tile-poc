@@ -46,7 +46,7 @@ def create_style_from_stac(style_data, indexes, bucket=None, dataname=None, defa
     #     colours = '-'.join(style_data['colours'])
     #     style = Style(style_id, style_indexes, resampling_method=resampling_method, hide_min=hide_min, hide_max=hide_max, colours=colours)
     # else:
-    style = Style(style_id, style_indexes, resampling_method=resampling_method, hide_min=hide_min, hide_max=hide_max)
+    style = Style(style_id, style_indexes, resampling_method=resampling_method, hide_min=hide_min, hide_max=hide_max, gradient=gradient)
 
     # save the style to s3
     if bucket and dataname:
