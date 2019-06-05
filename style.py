@@ -34,7 +34,7 @@ class Style:
 
     def __init__(self, id, indexes, resampling_method='bilinear',
                  scale_factor=1., hide_min=True, hide_max=False,
-                 colour_map=None):
+                 colour_map=None, gradient=True):
         """Define the style and if not set build the colour map.
 
         id : string
@@ -59,11 +59,19 @@ class Style:
         hide_max : bool
             Whether to hide values equal to (or above) the maximum.
             Defaults to false.
+        gradient : bool
+            If true colours will transition as a gradient between colours.
+            Otherwise the colours will remain the same until the next index. 
 
         """
         # TODO: Check for valid colours
         colours = id.split('-')
 
+        if colours[0] == 'nogradient':
+            colours.pop(0)
+            self.gradient = False
+        else:
+            self.gradient = gradient
         if colours[0] in RESAMPLING_OPTIONS:
             self.resampling_method = colours.pop(0)
         else:
@@ -77,10 +85,10 @@ class Style:
         if colour_map:
             self.colour_map = colour_map
         else:
-            self.colour_map = make_colour_map(colours, self.indexes)
-
+            self.colour_map = make_colour_map(colours, self.indexes, gradient=self.gradient)
         self.hide_min = hide_min
         self.hide_max = hide_max
+
 
     def json(self):
         """Returns the styling attributes as json"""
@@ -88,6 +96,7 @@ class Style:
         return json.dumps({
             'id': self.id,
             'indexes': self.indexes,
+            'gradient': self.gradient,
             'hide_min': self.hide_min,
             'hide_max': self.hide_max,
             'resamplilng_method': self.resampling_method,
