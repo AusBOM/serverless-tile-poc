@@ -114,7 +114,7 @@ def handler(event, context, invoke_local=False): # pylint: disable=unused-argume
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "wb") as binary_png:
             print("Generated: {filepath}".format(filepath=filepath))
-        binary_png.write(tile)
+            binary_png.write(tile)
     else:
         # save the tile to s3
         s3 = boto3.resource('s3')

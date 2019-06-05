@@ -75,10 +75,8 @@ class Style:
         # TODO: Handle scenarios where index list and colour list are different sizes
         # Use colour map if provided otherwise generate colour map
         if colour_map:
-            print('use colour map')
             self.colour_map = colour_map
         else:
-            print('make_colour map')
             self.colour_map = make_colour_map(colours, self.indexes)
 
         self.hide_min = hide_min
