@@ -24,9 +24,9 @@ def make_colour_map(colours, indexes=None, size=256):
 
     if not indexes:
         # If indexes is not set, return an even continuous distribution.
-        color_array = spectra.range(colours, size)
+        colour_array = spectra.range(colours, size)
         # Convert of Color objects to 2D numpy array of rgb and return
-        return np.asarray([c.rgb for c in color_array])*255
+        return np.asarray([c.rgb for c in colour_array])*255
 
     # Otherwise, align the colour map to the indexes
     # Find the colours between the first and second index.
