@@ -3,7 +3,7 @@
 
 import json
 import numpy as np
-from colour_map import make_colour_map
+from colour_map import make_colour_map, split_colours
 
 
 # The resampling options available.
@@ -77,17 +77,42 @@ class Style:
         else:
             self.resampling_method = resampling_method
         self.id = id
+        self.scale_factor = scale_factor
+        self.set_colours_and_indexes(colours, indexes)        
         self.min = indexes[0]
         self.max = indexes[-1]
-        self.indexes = self.normalise_list([index / scale_factor for index in indexes])
-        # TODO: Handle scenarios where index list and colour list are different sizes
         # Use colour map if provided otherwise generate colour map
         if colour_map:
             self.colour_map = colour_map
         else:
-            self.colour_map = make_colour_map(colours, self.indexes, gradient=self.gradient)
+            self.colour_map = make_colour_map(self.colours, self.indexes, gradient=self.gradient)
         self.hide_min = hide_min
         self.hide_max = hide_max
+
+    def set_colours_and_indexes(self, colours, indexes):
+        """Ensure that colours and the indexes are the same size.
+        
+        Parameters
+        ----------
+        
+        colours : llist of (spectra color objects or strings)
+            The list of colours given.
+        indexes : list of type 'float'
+            The index points given for shifts in colour"""
+
+        colour_count = len(colours)
+        index_count = len(indexes)
+        
+        if colour_count < index_count:
+            # if not enough colours, update colours along gradient
+            self.colours = split_colours(colours, index_count)
+        elif colour_count > index_count:
+            # if too many colours truncate extra.
+            self.colours = colours[0:index_count]
+        else:
+            self.colours = colours
+
+        self.indexes = self.normalise_list([index / self.scale_factor for index in indexes], indexes[0], indexes[-1])
 
 
     def json(self):
@@ -125,7 +150,7 @@ class Style:
 
         return ((tile-self.min)/(self.max-self.min)*255).astype(np.uint8)
 
-    def normalise_list(self, value_list):
+    def normalise_list(self, value_list, min, max):
         """Normalises the values in a list to scale between 0 and 255.
 
         Parameters
@@ -141,7 +166,7 @@ class Style:
         """
 
         if value_list:
-            return [round((value-self.min)/(self.max-self.min)*255) for value in value_list]
+            return [round((value-min)/(max-min)*255) for value in value_list]
 
         return None
 
