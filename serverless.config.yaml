@@ -1,0 +1,9 @@
+# serverless.config.yaml
+# A unique name for your service (to avoid bucket name conflicts)
+serviceName: my-serverless-tile
+# The s3 buckets that your project will need to read your raster data from.
+# The lambda function will get read-only access to these buckets.
+dataBuckets:
+  - "arn:aws:s3:::bom-csiro-serverless-test/*"
+  - "arn:aws:s3:::bom-csiro-serverless-test2/*"
+
