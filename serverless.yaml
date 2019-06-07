@@ -6,6 +6,9 @@ provider:
   runtime: python3.6
   region: ap-southeast-2
   stage: ${opt:stage, self:custom.defaultStage}
+  apiKeys:
+    - ${opt:stage, self:custom.defaultStage}-${file(./serverless.config.yaml):serviceName}-${opt:stage, self:custom.defaultStage}
+    
 # stackTags:
 
 
@@ -18,12 +21,13 @@ custom:
   apigwBinary:
     types:
       - '*/*'
+  tileBucket: ${opt:stage, self:custom.defaultStage}-${file(./serverless.config.yaml):serviceName}-tile
+  stacTable: stac_register_${opt:stage, self:custom.defaultStage}
 
 package:
   exclude:
     - '*/**'
   include:
-    # - 'stac/**'
     - 'handler.py'
     - 'tile.py'
     - 'colour_map.py'
@@ -35,27 +39,39 @@ functions:
     handler: handler.handler
     description: Generates tiles
     role: BucketKingRole
+    private: false
     events:
       - http:
           path: /tiles/{data}/{z}/{x}/{y}
           method: get
+    environment:
+        tileBucket: ${self:custom.tileBucket}
+        stacTable: ${self:custom.stacTable}
   tiler-style:
     handler: handler.handler
     description: Generates tiles
     role: BucketKingRole
+    private: false
     events:
       - http:
           path: /tiles/{data}/style/{style}/{z}/{x}/{y}
           method: get
-          # environment:
+    environment:
+        tileBucket: ${self:custom.tileBucket}
+        stacTable: ${self:custom.stacTable}
+
   stac:
     handler: stac.handler
     description: updates data catalogue
     role: BucketKingRole
+    private: true
     events:
       - http:
           path: /stac
           method: post
+    environment:
+        tileBucket: ${self:custom.tileBucket}
+        stacTable: ${self:custom.stacTable}
   collection_items:
     handler: stac.collection_items_handler
     description: Get items from a collection
@@ -70,7 +86,7 @@ resources:
     STACDynamoDBTable:
       Type: 'AWS::DynamoDB::Table'
       Properties:
-        TableName: stac_register
+        TableName: ${self:custom.stacTable}
         AttributeDefinitions:
           -
             AttributeName: id
@@ -85,7 +101,7 @@ resources:
     TileBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: crazy-test-bucket-bom-csiro
+        BucketName: ${self:custom.tileBucket}
         AccessControl: PublicRead
         WebsiteConfiguration:
           ErrorDocument: error.html
@@ -99,8 +115,6 @@ resources:
                       - 'execute-api.'
                       - ${opt:region, self:provider.region}
                       - '.amazonaws.com'
-                # 3kqevxas52.execute-api.ap-southeast-2.amazonaws.com
-                # HttpRedirectCode: "307"
                 Protocol: https
                 ReplaceKeyPrefixWith: 
                   !Join
@@ -144,8 +158,11 @@ resources:
                   Action:
                     - "s3:PutObject"
                     - "s3:GetObject"
-                  Resource: 
-                    - "arn:aws:s3:::bom-csiro-serverless-test/*"
+                  Resource: "arn:aws:s3:::${self:custom.tileBucket}/*"
+                - Effect: Allow
+                  Action:
+                    - "s3:GetObject"
+                  Resource: ${file(./serverless.config.yaml):dataBuckets} 
                 - Effect: Allow
                   Action:
                     - dynamodb:PutItem
@@ -153,10 +170,3 @@ resources:
                     - dynamodb:Scan
                   Resource:
                     - { "Fn::GetAtt": ["STACDynamoDBTable", "Arn" ] }
-                    # - { "Fn::GetAtt": [ "TileBucket", "Arn" ]}
-                    # - 'Fn::Join':
-                    #   - ""
-                    #   -
-                    #     - "arn:aws:s3:::"
-                    #     - "bom-csiro-serverless-test"
-                    #     - "/*"

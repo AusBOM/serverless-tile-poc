@@ -64,6 +64,7 @@ class Style:
             Otherwise the colours will remain the same until the next index. 
 
         """
+        print(indexes)
         # TODO: Check for valid colours
         colours = id.split('-')
 
@@ -124,7 +125,7 @@ class Style:
             'gradient': self.gradient,
             'hide_min': self.hide_min,
             'hide_max': self.hide_max,
-            'resamplilng_method': self.resampling_method,
+            'resampling_method': self.resampling_method,
             'colour_map': self.colour_map.tolist()
         })
 

@@ -1,11 +1,16 @@
 """Handle STAC related functions."""
 
 import json
+import os
 from decimal import Decimal
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 from style import Style
 # Helper class to convert a DynamoDB item to JSON.
+
+STAC_TABLE = os.environ['stacTable']
+dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
+table = dynamodb.Table(STAC_TABLE)
 
 def update_stac(item):
     """Writes the STAC item to dynamodb
@@ -15,8 +20,7 @@ def update_stac(item):
     item: object
         The STAC item to write to dynamodb.
     """
-    dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
-    table = dynamodb.Table('stac_register')
+      
     response = table.put_item(Item=item)
 
 
@@ -51,14 +55,14 @@ def create_style_from_stac(style_data, indexes, bucket=None, dataname=None, defa
     # save the style to s3
     if bucket and dataname:
         s3 = boto3.resource('s3')
-        s3filename = "tiles/{data}/{id}.json".format(data=dataname, id=style_id)
+        s3filename = f"tiles/{dataname}/{style_id}.json"
         s3object = s3.Object(bucket, s3filename)
         s3object.put(
             Body=(bytes(style.json().encode('UTF-8')))
         )
         # save default style as default.
         if default:
-            s3filename = "tiles/{data}/default.json".format(data=dataname, id=style_id)
+            s3filename = f"tiles/{dataname}/default.json"
             s3object = s3.Object(bucket, s3filename)
             s3object.put(
                 Body=(bytes(style.json().encode('UTF-8')))
@@ -86,7 +90,7 @@ def handler(event, context):
     for stac in stacs:
         update_stac(stac)
         if 'styles' in stac['properties'] and 'style_indexes' in stac['properties']:
-            bucket = "bom-csiro-serverless-test"
+            bucket = os.environ['tileBucket']
             for style in stac['properties']['styles']:
                 # Check if this style is the default.
                 default = False
@@ -114,8 +118,8 @@ def get_stac(id):
     dict
         The STAC item.
     """
-    dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
-    table = dynamodb.Table('stac_register')
+    # dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
+    # table = dynamodb.Table('stac_register')
     response = table.get_item(
         Key={
             'id': id

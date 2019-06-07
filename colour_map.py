@@ -15,6 +15,9 @@ def make_colour_map(colours, indexes=None, size=256, gradient=True):
         The index placements to tell when to move from one colour to the next
     size : int
         The size of the colour map.
+    gradient : bool
+        Whether to trasition between colours as a gradient (True) or jump 
+        between at the indexes. (False)
 
     Returns
     -------
