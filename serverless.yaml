@@ -4,13 +4,11 @@ service:
 provider:
   name: aws
   runtime: python3.6
-  region: ap-southeast-2
+  region: ${file(./serverless.config.yaml):region}
   stage: ${opt:stage, self:custom.defaultStage}
   apiKeys:
     - ${opt:stage, self:custom.defaultStage}-${file(./serverless.config.yaml):serviceName}-${opt:stage, self:custom.defaultStage}
-    
-# stackTags:
-
+  stackTags: ${file(./serverless.config.yaml):tags}
 
 plugins:
   - serverless-python-requirements
@@ -39,7 +37,6 @@ functions:
     handler: handler.handler
     description: Generates tiles
     role: BucketKingRole
-    private: false
     events:
       - http:
           path: /tiles/{data}/{z}/{x}/{y}
@@ -51,7 +48,6 @@ functions:
     handler: handler.handler
     description: Generates tiles
     role: BucketKingRole
-    private: false
     events:
       - http:
           path: /tiles/{data}/style/{style}/{z}/{x}/{y}
@@ -64,22 +60,23 @@ functions:
     handler: stac.handler
     description: updates data catalogue
     role: BucketKingRole
-    private: true
     events:
       - http:
           path: /stac
           method: post
+          private: true
     environment:
         tileBucket: ${self:custom.tileBucket}
         stacTable: ${self:custom.stacTable}
-  collection_items:
-    handler: stac.collection_items_handler
-    description: Get items from a collection
-    role: BucketKingRole
-    events:
-      - http:
-          path: /collections/{collection_id}/items
-          method: get
+  # Not yet implemented
+  # collection_items:
+  #   handler: stac.collection_items_handler
+  #   description: Get items from a collection
+  #   role: BucketKingRole
+  #   events:
+  #     - http:
+  #         path: /collections/{collection_id}/items
+  #         method: get
 
 resources:
   Resources:
