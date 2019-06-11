@@ -12,6 +12,7 @@ STAC_TABLE = os.environ['stacTable']
 dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
 table = dynamodb.Table(STAC_TABLE)
 
+
 def update_stac(item):
     """Writes the STAC item to dynamodb
 
@@ -46,11 +47,13 @@ def create_style_from_stac(style_data, indexes, bucket=None, dataname=None, defa
     hide_min = style_data.get('hide_min', True)
     hide_max = style_data.get('hide_max', False)
     gradient = style_data.get('gradient', True)
+    colours = style_data.get('colours')
     # if 'colours' in style_data:
     #     colours = '-'.join(style_data['colours'])
     #     style = Style(style_id, style_indexes, resampling_method=resampling_method, hide_min=hide_min, hide_max=hide_max, colours=colours)
     # else:
-    style = Style(style_id, style_indexes, resampling_method=resampling_method, hide_min=hide_min, hide_max=hide_max, gradient=gradient)
+    style = Style(style_id, style_indexes, resampling_method=resampling_method, 
+        hide_min=hide_min, hide_max=hide_max, colours=colours, gradient=gradient)
 
     # save the style to s3
     if bucket and dataname:

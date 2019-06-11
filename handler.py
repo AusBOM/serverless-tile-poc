@@ -55,7 +55,6 @@ def get_style(data_id, style_id, bucket, indexes=None):
     try:
         style_config = s3.Object(bucket, s3path).get()
         json_content = json.loads(style_config['Body'].read().decode('utf-8'))
-        print(json_content['indexes'])
         return Style(**json_content)
     except Exception as e:
         print(e)

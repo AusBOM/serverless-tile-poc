@@ -68,6 +68,6 @@ def split_colours(colours_list, colours_required):
         A list with the appropriated number of colours created from the range
         given by the colours_list.
     """
-
+    print(colours_list)
     colour_range = spectra.range(colours_list, colours_required)
     return [colour.hexcode for colour in colour_range]
