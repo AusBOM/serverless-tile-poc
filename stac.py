@@ -5,6 +5,7 @@ import os
 from decimal import Decimal
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
+from botocore.exceptions import ClientError
 from style import Style
 # Helper class to convert a DynamoDB item to JSON.
 
@@ -21,7 +22,10 @@ def update_stac(item):
     item: object
         The STAC item to write to dynamodb.
     """
-      
+    if 'assets' not in item or \
+        'source' not in item['assets'] or \
+        'href' not in item['assets']['source']:
+        raise AttributeError('Missing source href')
     response = table.put_item(Item=item)
 
 
@@ -73,6 +77,31 @@ def create_style_from_stac(style_data, indexes, bucket=None, dataname=None, defa
 
     return style
 
+def error_response(title, status='500'):
+    """Generates an error response to return to API Gateway
+
+    Parameters
+    ----------
+    title: string
+        The title description of the error.
+    status: string
+        Thes http status code.
+    
+    Returns
+    -------
+    dict:
+        An response back to the api gateway with the error.
+    """
+    return {
+        'statusCode': '500',
+        'body': json.dumps({
+        'errors': [{
+            'status': status,
+            'title': title
+        }]
+    })}
+
+
 def handler(event, context):
     """The handler for the lambda endpoint for adding/updating a new STAC.
 
@@ -91,7 +120,13 @@ def handler(event, context):
     stacs = json.loads(event['body'], parse_float=Decimal)
 
     for stac in stacs:
-        update_stac(stac)
+        try:
+           update_stac(stac)
+        except AttributeError as e:
+            return error_response(str(e))
+        except ClientError as e:
+            print(e)
+            return error_response("Unable to store STAC item")
         if 'styles' in stac['properties'] and 'style_indexes' in stac['properties']:
             bucket = os.environ['tileBucket']
             for style in stac['properties']['styles']:
@@ -100,7 +135,18 @@ def handler(event, context):
                 if 'default_style' in stac['properties'] and stac['properties']['default_style'] == style['id']:
                     default = True
                 # Create the style
-                create_style_from_stac(style, stac['properties']['style_indexes'], bucket, stac['id'], default=default)
+                try:
+                    create_style_from_stac(style, stac['properties']['style_indexes'], bucket, stac['id'], default=default)
+                except KeyError as e:
+                    print(e)
+                    return error_response('ID not provided for style')
+                except ClientError as e:
+                    print(e)
+                    return error_response('Unable to save style in tile bucket')
+                except ValueError:
+                    print(e)
+                    return error_response(str(e))
+                    
 
     # return empty response
     return {

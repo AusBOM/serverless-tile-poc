@@ -88,16 +88,14 @@ def handler(event, context, invoke_local=False): # pylint: disable=unused-argume
 
     data_config = get_stac_config(data)
 
-    if 'style' in event['pathParameters'] and event['pathParameters']['style'] != 'default':
-        style_id = event['pathParameters']['style']
-        style = get_style(data, style_id, bucket, data_config['style_indexes'])
-        output_file = f"{data_config['output_prefix']}/styles/{style_id}/{zoom_index}/{x_index}/{y_index}.png"
-    else:
-        style = get_style(data, 'default', bucket)
-        # style = get_style(data, '#0000ff-azure-aqua-blueviolet-burlywood-green-darkgreen-chartreuse-coral-darkorange-deeppink-dimgrey-darkviolet', bucket)
-        output_file = f"{data_config['output_prefix']}/{zoom_index}/{x_index}/{y_index}.png"
-
     try:
+        if 'style' in event['pathParameters'] and event['pathParameters']['style'] != 'default':
+            style_id = event['pathParameters']['style']
+            style = get_style(data, style_id, bucket, data_config['style_indexes'])
+            output_file = f"{data_config['output_prefix']}/styles/{style_id}/{zoom_index}/{x_index}/{y_index}.png"
+        else:
+            style = get_style(data, 'default', bucket)
+            output_file = f"{data_config['output_prefix']}/{zoom_index}/{x_index}/{y_index}.png"
         tile = create_tile(data_config['source'], x_index, y_index, zoom_index, style, bands=data_config['band'])
     except Exception as e:
         print(e)
@@ -115,9 +113,13 @@ def handler(event, context, invoke_local=False): # pylint: disable=unused-argume
             binary_png.write(tile)
     else:
         # save the tile to s3
-        s3 = boto3.resource('s3')
-        s3object = s3.Object(bucket, output_file)
-        s3object.put(Body=tile)
+        try:
+            s3 = boto3.resource('s3')
+            s3object = s3.Object(bucket, output_file)
+            s3object.put(Body=tile)
+        except Exception as e:
+            print('failed to save to s3 tile cache')
+            print(e)
 
     return {
         'statusCode': "200",
