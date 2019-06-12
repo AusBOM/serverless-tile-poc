@@ -1,0 +1,15 @@
+# serverless.config.yaml
+# A unique name for your service (to avoid bucket name conflicts)
+serviceName: my-serverless-tile
+# The aws region to host the service.
+region: ap-southeast-2
+# The s3 buckets that your project will need to read your raster data from.
+# The lambda function will get read-only access to these buckets.
+# Note you either give access to all file with /* at the end or
+# to the specific file e.g. /examplefile.tif
+dataBuckets:
+  - "arn:aws:s3:::bom-csiro-serverless-test/*"
+  - "arn:aws:s3:::bom-csiro-serverless-test2/*"
+tags:
+  costcode: relevant-costcode
+  service: serverless-tile

@@ -1,7 +1,6 @@
 """Using AWS Lambda to generate tile from data source."""
 
 import os
-
 import base64
 import json
 import numpy as np
@@ -51,14 +50,14 @@ def get_style(data_id, style_id, bucket, indexes=None):
     Style object
         The style to use for this implementation.
     """
-    
-    s3path = 'tiles/{data_id}/{style_id}.json'.format(data_id=data_id, style_id=style_id)
+    s3path = f'tiles/{data_id}/{style_id}.json'
     s3 = boto3.resource('s3')
     try:
         style_config = s3.Object(bucket, s3path).get()
         json_content = json.loads(style_config['Body'].read().decode('utf-8'))
         return Style(**json_content)
-    except:
+    except Exception as e:
+        print(e)
         return Style(style_id, indexes)
 
 def handler(event, context, invoke_local=False): # pylint: disable=unused-argument
@@ -85,20 +84,19 @@ def handler(event, context, invoke_local=False): # pylint: disable=unused-argume
     y_index = int(event['pathParameters']['y'].strip('.png'))
     zoom_index = int(event['pathParameters']['z'])
 
-    # TODO: get the bucket from environment variable
-    bucket = "bom-csiro-serverless-test"
+    bucket = os.environ['tileBucket']
 
     data_config = get_stac_config(data)
 
     if 'style' in event['pathParameters'] and event['pathParameters']['style'] != 'default':
-        style = get_style(data, event['pathParameters']['style'], bucket, data_config['style_indexes'])
-        output_file = "{prefix}/styles/{style}/{z}/{x}/{y}.png".format(prefix=data_config['output_prefix'], style=event['pathParameters']['style'], x=x_index,y=y_index,z=zoom_index)
+        style_id = event['pathParameters']['style']
+        style = get_style(data, style_id, bucket, data_config['style_indexes'])
+        output_file = f"{data_config['output_prefix']}/styles/{style_id}/{zoom_index}/{x_index}/{y_index}.png"
     else:
         style = get_style(data, 'default', bucket)
         # style = get_style(data, '#0000ff-azure-aqua-blueviolet-burlywood-green-darkgreen-chartreuse-coral-darkorange-deeppink-dimgrey-darkviolet', bucket)
-        output_file = "{prefix}/{z}/{x}/{y}.png".format(prefix=data_config['output_prefix'],x=x_index, y=y_index, z=zoom_index)
+        output_file = f"{data_config['output_prefix']}/{zoom_index}/{x_index}/{y_index}.png"
 
-    bucket = "bom-csiro-serverless-test"
     try:
         tile = create_tile(data_config['source'], x_index, y_index, zoom_index, style, bands=data_config['band'])
     except Exception as e:
@@ -110,10 +108,10 @@ def handler(event, context, invoke_local=False): # pylint: disable=unused-argume
 
     if invoke_local:
         # If localally invoked save the tile to disk
-        filepath = "data/{output_file}".format(output_file=output_file)
+        filepath = f"data/{output_file}"
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "wb") as binary_png:
-            print("Generated: {filepath}".format(filepath=filepath))
+            print(f"Generated: {filepath}")
             binary_png.write(tile)
     else:
         # save the tile to s3
