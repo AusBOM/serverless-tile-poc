@@ -16,7 +16,7 @@ def make_colour_map(colours, indexes=None, size=256, gradient=True):
     size : int
         The size of the colour map.
     gradient : bool
-        Whether to trasition between colours as a gradient (True) or jump 
+        Whether to trasition between colours as a gradient (True) or jump
         between at the indexes. (False)
 
     Returns
@@ -68,6 +68,5 @@ def split_colours(colours_list, colours_required):
         A list with the appropriated number of colours created from the range
         given by the colours_list.
     """
-    print(colours_list)
     colour_range = spectra.range(colours_list, colours_required)
     return [colour.hexcode for colour in colour_range]
