@@ -94,13 +94,24 @@ def handler(event, context, invoke_local=False): # pylint: disable=unused-argume
         output_file = f"{data_config['output_prefix']}/styles/{style_id}/{zoom_index}/{x_index}/{y_index}.png"
     else:
         style = get_style(data, 'default', bucket)
-        # style = get_style(data, '#0000ff-azure-aqua-blueviolet-burlywood-green-darkgreen-chartreuse-coral-darkorange-deeppink-dimgrey-darkviolet', bucket)
         output_file = f"{data_config['output_prefix']}/{zoom_index}/{x_index}/{y_index}.png"
 
     try:
-        tile = create_tile(data_config['source'], x_index, y_index, zoom_index, style, bands=data_config['band'])
+        if 'style' in event['pathParameters'] and event['pathParameters']['style'] != 'default':
+            style_id = event['pathParameters']['style']
+            style = get_style(data, style_id, bucket, data_config['style_indexes'])
+            output_file = f"{data_config['output_prefix']}/styles/{style_id}/{zoom_index}/{x_index}/{y_index}.png"
+        else:
+            style = get_style(data, 'default', bucket)
+            output_file = f"{data_config['output_prefix']}/{zoom_index}/{x_index}/{y_index}.png"
+            bands = data_config.get('band', [1])
+        tile = create_tile(data_config['source'], x_index, y_index, zoom_index, style, bands=bands)
     except Exception as e:
         print(e)
+        # return {
+        #     'statusCode': '404',
+        #     'headers': {}
+        # }
         # Create empty 1x1 transparent is png
         tile_init = np.full((1, 1, 1), 0, dtype=np.uint8)
         mask = np.full((1, 1), 0, dtype=np.uint8)
@@ -115,9 +126,14 @@ def handler(event, context, invoke_local=False): # pylint: disable=unused-argume
             binary_png.write(tile)
     else:
         # save the tile to s3
-        s3 = boto3.resource('s3')
-        s3object = s3.Object(bucket, output_file)
-        s3object.put(Body=tile)
+        try:
+            s3 = boto3.resource('s3')
+            s3object = s3.Object(bucket, output_file)
+            s3object.put(Body=tile)
+        except Exception as e:
+            # Log error but still return tile.
+            print('failed to save to s3 tile cache')
+            print(e)
 
     return {
         'statusCode': "200",
