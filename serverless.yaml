@@ -109,7 +109,7 @@ resources:
                   !Join
                     - ''
                     - - !Ref ApiGatewayRestApi
-                      - 'execute-api.'
+                      - '.execute-api.'
                       - ${opt:region, self:provider.region}
                       - '.amazonaws.com'
                 Protocol: https
@@ -167,3 +167,30 @@ resources:
                     - dynamodb:Scan
                   Resource:
                     - { "Fn::GetAtt": ["STACDynamoDBTable", "Arn" ] }
+    StaticSiteS3BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: TileBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action:
+              - s3:GetObject
+              Resource:
+                Fn::Join: [
+                  "", [
+                    "arn:aws:s3:::",
+                    {
+                      "Ref": "TileBucket"
+                    },
+                    "/*"
+                  ]
+                ]
+  Outputs:
+    TileCacheEndpoint:
+      Value: { "Fn::GetAtt": ["TileBucket", "WebsiteURL" ] }
+      Export:
+        Name: TileCacheEndpoint

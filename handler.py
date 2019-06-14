@@ -96,9 +96,14 @@ def handler(event, context, invoke_local=False): # pylint: disable=unused-argume
         else:
             style = get_style(data, 'default', bucket)
             output_file = f"{data_config['output_prefix']}/{zoom_index}/{x_index}/{y_index}.png"
-        tile = create_tile(data_config['source'], x_index, y_index, zoom_index, style, bands=data_config['band'])
+            bands = data_config.get('band', [1])
+        tile = create_tile(data_config['source'], x_index, y_index, zoom_index, style, bands=bands)
     except Exception as e:
         print(e)
+        # return {
+        #     'statusCode': '404',
+        #     'headers': {}
+        # }
         # Create empty 1x1 transparent is png
         tile_init = np.full((1, 1, 1), 0, dtype=np.uint8)
         mask = np.full((1, 1), 0, dtype=np.uint8)
@@ -118,6 +123,7 @@ def handler(event, context, invoke_local=False): # pylint: disable=unused-argume
             s3object = s3.Object(bucket, output_file)
             s3object.put(Body=tile)
         except Exception as e:
+            # Log error but still return tile.
             print('failed to save to s3 tile cache')
             print(e)
 

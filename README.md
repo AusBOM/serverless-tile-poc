@@ -16,13 +16,13 @@ Note:  This has never been tested in a production environment.  So please report
 
 - Styling customisation includes colours, resampling method, use of gradient, and setting the value at which the style colours are cycled.
 
-- Use an Open Street Map server XYZ format.
+- Uses an Open Street Map server XYZ format.
 
 - Easy to add new source data for tiles. (via pushing a STAC file with the location.)
 
 - Ideal for use with COGs (Cloud Optimised Geotiffs)
 
-- User rio-tiler under the hood to generate the tiles.
+- Uses rio-tiler under the hood to generate the tiles.
 
 ## How To Use
 
@@ -100,9 +100,15 @@ An example is provided below:
 
 See below about adding a style.
 
-Send the list of STAC items, to the `/stac` endpoint you deployed earlier.  Now your data is ready to use.
+Send the list of STAC items, to the `/stac` endpoint you deployed earlier.
+You will need to send the STAC item list as the body,  and also a header `x-api-key` with the apikey provided as output from your deployment.  Now your data is ready to use.
+
+Note this endpoint requires an api key to prevent anyone from just adding data sources to your service.  But it may be recommended to add additional security measures.
 
 ### Using the endpoint
+
+You can either directly hit the tile generation service or you can hit the s3 tile cache (recommended) that will automatically hit the endpoint.
+To see these endpoints you can run `sls info -v` from the project directory.
 
 If you set a default style you can now generate tiles for that data using the `/tiles/{data}/{z}/{x}/{y}` endpoint.
 
@@ -116,8 +122,10 @@ Go to your choice of tool to display your rendered tiles.  I will use terria <ht
 
 ##### Configure your data source
 
-In terria I do this by clicking the 'Add data' button, selecting the 'My Data' tab, clicking 'Add Web Data`, selecting 'Open Street Map server' and putting in the /tiles/{data} endpoint e.g. 
-https://xxxxxxxxxx.execute-api.ap-southeast-2.amazonaws.com/devmbell/tiles/UV_3hrly_AUSTR_1529971200
+In terria I do this by clicking the 'Add data' button, selecting the 'My Data' tab, clicking 'Add Web Data`, selecting 'Open Street Map server' and putting in the /tiles/{data} endpoint e.g.
+`http://devuser-my-serverless-tile-tile.s3-website-ap-southeast-2.amazonaws.com/tiles/UV_3hrly_AUSTR_1529971200`
+or
+`https://xxxxxxxxxx.execute-api.ap-southeast-2.amazonaws.com/devuser/tiles/UV_3hrly_AUSTR_1529971200`
 
 ### Adding a style
 
@@ -152,6 +160,6 @@ Style takes the following parameters:
 
 ## S3 Tile Cache
 
-The deployment will automatically set you up with an s3 bucket which will populate tiles.  The ideal way to use this service is to hit the s3 endpoint under tiles/{data}.  If the tile has been generated it will get it as a simple http request if the tile hasn't been generated the request will be redirected to the lambda function will send back the tile and populate the s3 bucket with the tile.
+The deployment will automatically set you up with an s3 bucket which will populate tiles.  The ideal way to use this service is to hit the s3 endpoint under /tiles/{data}.  If the tile has been generated it will get it as a simple http request if the tile hasn't been generated the request will be redirected to the lambda function will send back the tile and populate the s3 bucket with the tile.
 
 The s3 bucket contains a folder for each style.
