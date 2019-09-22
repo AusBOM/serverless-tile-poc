@@ -4,10 +4,11 @@ service:
 provider:
   name: aws
   runtime: python3.6
-  region: ap-southeast-2
+  region: ${file(./serverless.config.yaml):region}
   stage: ${opt:stage, self:custom.defaultStage}
-# stackTags:
-
+  apiKeys:
+    - ${opt:stage, self:custom.defaultStage}-${file(./serverless.config.yaml):serviceName}-${opt:stage, self:custom.defaultStage}
+  stackTags: ${file(./serverless.config.yaml):tags}
 
 plugins:
   - serverless-python-requirements
@@ -18,6 +19,8 @@ custom:
   apigwBinary:
     types:
       - '*/*'
+  tileBucket: ${opt:stage, self:custom.defaultStage}-${file(./serverless.config.yaml):serviceName}-tile
+  stacTable: stac_register_${opt:stage, self:custom.defaultStage}
 
 package:
   exclude:
@@ -38,24 +41,86 @@ functions:
       - http:
           path: /tiles/{data}/{z}/{x}/{y}
           method: get
-    # environment:
+    environment:
+        tileBucket: ${self:custom.tileBucket}
+        stacTable: ${self:custom.stacTable}
+  tiler-style:
+    handler: handler.handler
+    description: Generates tiles
+    role: BucketKingRole
+    events:
+      - http:
+          path: /tiles/{data}/style/{style}/{z}/{x}/{y}
+          method: get
+    environment:
+        tileBucket: ${self:custom.tileBucket}
+        stacTable: ${self:custom.stacTable}
+
+  stac:
+    handler: stac.handler
+    description: updates data catalogue
+    role: BucketKingRole
+    events:
+      - http:
+          path: /stac
+          method: post
+          private: true
+    environment:
+        tileBucket: ${self:custom.tileBucket}
+        stacTable: ${self:custom.stacTable}
+  # Not yet implemented
+  # collection_items:
+  #   handler: stac.collection_items_handler
+  #   description: Get items from a collection
+  #   role: BucketKingRole
+  #   events:
+  #     - http:
+  #         path: /collections/{collection_id}/items
+  #         method: get
 
 resources:
   Resources:
-    # TileBucket:
-    #   Type: AWS::S3::Bucket
-    #   Properties:
-    #     BucketName: bom-csiro-serverless-test
-        # Access-Control: PublicRead
-        # WebsiteConfiguration:
-        #   RoutingRules:
-        #     - RedirectRule:
-        #       HostName: foo.amazon.aws.com
-        #       HttpRedirectCode: "307"
-        #       Protocol: https
-        #       ReplaceKeyPrefixWith: prod/photos/resize?key=
-        #       RoutingRuleCondition:
-        #         HTTPErrorCodeRetuledEquals: "404"
+    STACDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: ${self:custom.stacTable}
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 3
+          WriteCapacityUnits: 3
+    TileBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.tileBucket}
+        AccessControl: PublicRead
+        WebsiteConfiguration:
+          ErrorDocument: error.html
+          IndexDocument: index.html
+          RoutingRules:
+            - RedirectRule:
+                HostName:
+                  !Join
+                    - ''
+                    - - !Ref ApiGatewayRestApi
+                      - '.execute-api.'
+                      - ${opt:region, self:provider.region}
+                      - '.amazonaws.com'
+                Protocol: https
+                ReplaceKeyPrefixWith: 
+                  !Join
+                    - ''
+                    - - ${opt:stage, self:provider.stage}
+                      - '/tiles/'
+              RoutingRuleCondition:
+                HttpErrorCodeReturnedEquals: "404"
+                KeyPrefixEquals: "tiles/"
     BucketKingRole:
       Type: AWS::IAM::Role
       Properties:
@@ -90,12 +155,42 @@ resources:
                   Action:
                     - "s3:PutObject"
                     - "s3:GetObject"
-                  Resource: 
-                    - "arn:aws:s3:::bom-csiro-serverless-test/*"
-                    # - { "Fn::GetAtt": [ "TileBucket", "Arn" ]}
-                    # - 'Fn::Join':
-                    #   - ""
-                    #   -
-                    #     - "arn:aws:s3:::"
-                    #     - "bom-csiro-serverless-test"
-                    #     - "/*"
+                  Resource: "arn:aws:s3:::${self:custom.tileBucket}/*"
+                - Effect: Allow
+                  Action:
+                    - "s3:GetObject"
+                  Resource: ${file(./serverless.config.yaml):dataBuckets} 
+                - Effect: Allow
+                  Action:
+                    - dynamodb:PutItem
+                    - dynamodb:GetItem
+                    - dynamodb:Scan
+                  Resource:
+                    - { "Fn::GetAtt": ["STACDynamoDBTable", "Arn" ] }
+    StaticSiteS3BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: TileBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action:
+              - s3:GetObject
+              Resource:
+                Fn::Join: [
+                  "", [
+                    "arn:aws:s3:::",
+                    {
+                      "Ref": "TileBucket"
+                    },
+                    "/*"
+                  ]
+                ]
+  Outputs:
+    TileCacheEndpoint:
+      Value: { "Fn::GetAtt": ["TileBucket", "WebsiteURL" ] }
+      Export:
+        Name: TileCacheEndpoint
